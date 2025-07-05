@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Javascript Deobfuscator</title>
+    <script src="https://cdn.tailwindcss.com/"></script>
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.49.0/min/vs/loader.js"></script>
+    <style>
+        #output {
+            white-space: pre-wrap;
+            font-family: monospace;
+            padding: 8px;
+            overflow-y: auto;
+        }
+        .editor-panel {
+            flex: 1;
+            border-right: 1px solid #ccc;
+        }
+        .toolbar {
+            padding: 8px;
+            border-bottom: 1px solid #ccc;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen flex flex-col overflow-hidden">
+    <div class="h-[50px] flex items-center justify-center bg-gray-100 border-b border-gray-200">
+        <h1 id="titleH1" class="font-bold text-center text-2xl"></h1>
+        <a href="https://github.com/qfcy/jsunfxxk" target="_blank" class="text-blue-700 underline absolute mr-2 right-0">GitHub</a>
+    </div>
+    <div class="flex-1 flex flex-row w-full overflow-hidden">
+        <div id="editor-container" class="w-1/2">
+            <div id="editor" class="h-full"></div>
+        </div>
+        <div class="flex-1 flex flex-col w-1/2 h-full overflow-hidden border-l border-gray-200">
+            <div class="toolbar flex">
+                <button id="deob" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Deobfuscate</button>
+                <label class=""text-sm font-medium">
+                    <select id="levelSel" class="ml-2 px-2 py-3 border rounded">
+                        <option value="-1">Default Level (Highest)</option>
+                        <option value="1">Only jsfuck Expressions</option>
+                        <option value="2">Only Expressions</option>
+                        <option value="3">Character Extraction</option>
+                        <option value="4">Merge Character Concatenation</option>
+                        <option value="5">Merge Numeric Characters</option>
+                    </select>
+                </label>
+                <label class="text-sm font-medium flex items-center mx-3">
+                    <input type="checkbox" id="loopChk" class="mr-1" checked />
+                    Loop Deobfuscation
+                </label>
+            </div>
+            <div id="output" class="flex-1 overflow-auto p"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import {unfuckJS} from "./unfuck.js";
+        let codeData=localStorage.getItem("savedCode");
+        if(!codeData){
+            fetch("/examples/example.js").then(
+                resp=>{resp.text().then(text=>{codeData=text;})})
+                .catch(err=>console.warn("Failed to load the default example:",err));
+        }
+        require.config({paths: {'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.49.0/min/vs'}});
+        require(['vs/editor/editor.main'], function() {
+            window.editor = monaco.editor.create(document.getElementById('editor'), {
+                value: codeData,
+                language: 'javascript',
+                theme: 'vs-light',
+                minimap: {
+                    enabled: false
+                },
+                wordWrap: 'on'
+            });
+        });
+        const cache={};
+        fetch("/cache.json").then(resp=>resp.json().then(
+                json=>Object.assign(cache,json)
+            )).catch(err=>console.warn("Failed to load cache:",err));
+        const btnDeob = document.getElementById("deob");
+        btnDeob.addEventListener("click",() => {
+            const code = window.editor.getValue();
+            output.textContent=unfuckJS(code,cache,
+                parseInt(document.getElementById("levelSel").value),
+                document.getElementById("loopChk").checked
+            );
+        });
+        window.onresize=function() {
+            if (window.editor) {
+                window.editor.layout();
+            }
+        };
+        window.onload=function(){
+            document.getElementById("titleH1").textContent=document.title;
+            window.editor.onDidChangeModelContent((event) => {
+                localStorage.setItem("savedCode",window.editor.getValue());
+            });
+        };
+    </script>
+</body>
+</html>
