@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="An online Javascript deobfuscator specifically for JSFuck">
     <title>Online Javascript Deobfuscator</title>
     <script src="https://cdn.tailwindcss.com/"></script>
     <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.49.0/min/vs/loader.js"></script>
@@ -58,7 +59,7 @@
     <script type="module">
         import {unfuckJS} from "./unfuck.js";
         let codeData=localStorage.getItem("savedCode");
-        if(!codeData){
+        if(codeData === null){
             fetch("/examples/example.js").then(
                 resp=>{resp.text().then(text=>{codeData=text;})})
                 .catch(err=>console.warn("Failed to load the default example:",err));
@@ -82,10 +83,18 @@
         const btnDeob = document.getElementById("deob");
         btnDeob.addEventListener("click",() => {
             const code = window.editor.getValue();
-            output.textContent=unfuckJS(code,cache,
-                parseInt(document.getElementById("levelSel").value),
-                document.getElementById("loopChk").checked
-            );
+            const output=document.getElementById("output");
+            try{
+                output.textContent=unfuckJS(code,cache,
+                    parseInt(document.getElementById("levelSel").value),
+                    document.getElementById("loopChk").checked
+                );
+                output.style.color="";
+            } catch (err) {
+                console.error(err);
+                output.textContent=`Failed to deobfuscate JS: ${err.message}`;
+                output.style.color="#f00";
+            }
         });
         window.onresize=function() {
             if (window.editor) {

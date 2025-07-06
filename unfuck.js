@@ -203,7 +203,7 @@ function joinGroups(code,group){
 export function mergeStrConcats(code){
     // 合并类似"a"+"b"的字符串为"ab"
     const strBoundary=getStrBoundary(code,QUOTE_CHARS);
-    if(!strBoundary.length) return;
+    if(!strBoundary.length) return "";
     const result=[],group=[strBoundary[0]];let pre_end=0;
     let [lastStart,lastEnd]=strBoundary[0];
     for(const [start,end] of strBoundary.slice(1)){
