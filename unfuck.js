@@ -1,3 +1,4 @@
+'use strict';
 // 混淆逻辑主模块（浏览器、Node共用）
 const TOKENS=["!","+","[]","[","]"],MATCH={"[":"]","(":")"},
       IGNORED='\'"`',QUOTE_CHARS='\'"';
@@ -20,8 +21,8 @@ export function genCache(cache,maxlen=CACHE_MAXLEN,str=""){
 
 function isEscapedQuote(str,i){ // 是否为已经转义的引号
     let idx=i-1;
-    while(str[idx]=="\\")idx--;
-    return (i-1-idx) % 2 === 1;
+    while(idx>=0 && str[idx]=="\\")idx--;
+    return idx>=0 && (i-idx+1) % 2 === 1;
 }
 function getStrBoundary(code,quote_chars=IGNORED){
     // 获取全部字符串边界，如："string"
@@ -78,14 +79,18 @@ function canEval(code){ // 是否可执行eval
     const strBoundary=getStrBoundary(code);
     const stack=[];
     for(let i=0;i<code.length;i++){
-        if("()".includes(code[i]) && !isInBoundary(strBoundary,i))
+        if(!isInBoundary(strBoundary,i))
             if(code[i]==="("){
                 let j=i-1;
-                while(code[j]===" ") j--; // 跳过空格
-                if(!SAFE_OPERATORS.includes(code[j]))
+                while(j>=0 && code[j]===" ") j--; // 跳过空格
+                if(j>=0 && !SAFE_OPERATORS.includes(code[j]))
                     return false;
                 stack.push(code[i])
-            } else {
+            } else if("[{".includes(code[i])){
+                stack.push(code[i]);
+            } else if(code[i]==="," && !stack.length){
+                return false; // 不允许外层逗号
+            } else if(")]}".includes(code[i])) {
                 if(!stack.length)return false;
                 stack.pop();
             }
